@@ -437,14 +437,43 @@ protected:
   }
 };
 
-class Images : public QWidget
+class BinaryContentWidget : public QWidget
 {
 public:
-  Images(
+  BinaryContentWidget(QWidget *parent=nullptr)
+  : QWidget(parent)
+  {
+  }
+  bool hasFailed() const
+  {
+    return failure;
+  }
+protected:
+  bool failure;
+};
+
+class DefaultContentWidget : public BinaryContentWidget
+{
+public:
+  DefaultContentWidget(
     const git::Patch patch,
     bool lfs = false,
     QWidget *parent = nullptr)
-    : QWidget(parent), mPatch(patch)
+    : BinaryContentWidget(parent)
+    {
+      QHBoxLayout *layout = new QHBoxLayout(this);
+      layout->addWidget(new QLabel("This is a binary file that we do not know how to preview."));
+    }
+};
+
+class ImageContentWidget : public BinaryContentWidget
+{
+public:
+  ImageContentWidget(
+    const git::Patch patch,
+    bool lfs = false,
+    QWidget *parent = nullptr)
+    : BinaryContentWidget(parent), mPatch(patch)
   {
     int size = 0;
     QPixmap pixmap = loadPixmap(git::Diff::NewFile, size, lfs);
@@ -454,8 +483,10 @@ public:
       pixmap.load(path);
     }
 
-    if (pixmap.isNull())
+    if (pixmap.isNull()) {
+      failure = true;
       return;
+    }
 
     QHBoxLayout *layout = new QHBoxLayout(this);
     layout->setContentsMargins(6, 4, 8, 4);
@@ -1873,9 +1904,9 @@ public:
 
   void createContent()
   {
-    // Try to load an image from the file.
+    // Try to preview binary content from the file.
     if (binary) {
-      layout->addWidget(addImage(disclosureButton, mPatch));
+      layout->addWidget(addOtherContent(disclosureButton, mPatch));
     } else if (mPatch.isUntracked()) {     // Add untracked file content.
       if (!QFileInfo(path).isDir())
         layout->addWidget(addHunk(mDiff, mPatch, -1, lfs, submodule));
@@ -1909,8 +1940,8 @@ public:
             return;
           }
 
-          // Load image.
-          layout->addWidget(addImage(disclosureButton, mPatch, true));
+          // Load binary content.
+          layout->addWidget(addOtherContent(disclosureButton, mPatch, true));
         });
       }
     }
@@ -1924,16 +1955,16 @@ public:
 
     if (mHeader->lfsButton() && !visible) {
     mHunks.first()->setVisible(false);
-    if (!mImages.isEmpty())
-        mImages.first()->setVisible(false);
+    if (!mOtherContent.isEmpty())
+        mOtherContent.first()->setVisible(false);
     return;
     }
 
     if (mHeader->lfsButton() && visible) {
     bool checked = mHeader->lfsButton()->isChecked();
     mHunks.first()->setVisible(!checked);
-    if (!mImages.isEmpty())
-        mImages.first()->setVisible(checked);
+    if (!mOtherContent.isEmpty())
+        mOtherContent.first()->setVisible(checked);
     return;
     }
 
@@ -1943,7 +1974,7 @@ public:
 
   bool isEmpty()
   {
-    return (mHunks.isEmpty() && mImages.isEmpty());
+    return (mHunks.isEmpty() && mOtherContent.isEmpty());
   }
 
   Header *header() const { return mHeader; }
@@ -1952,21 +1983,27 @@ public:
 
   QList<HunkWidget *> hunks() const { return mHunks; }
 
-  QWidget *addImage(
+  QWidget *addOtherContent(
     DisclosureButton *button,
     const git::Patch patch,
     bool lfs = false)
   {
-    Images *images = new Images(patch, lfs, this);
+    BinaryContentWidget *content = nullptr;
+
+    content = new ImageContentWidget(patch, lfs, this);
+    if (content->hasFailed()) {
+      delete content;
+      content = new DefaultContentWidget(patch, lfs, this);
+    }
 
     // Hide on file collapse.
     if (!lfs)
-      connect(button, &DisclosureButton::toggled, images, &QLabel::setVisible);
+      connect(button, &DisclosureButton::toggled, content, &QLabel::setVisible);
 
     // Remember image.
-    mImages.append(images);
+    mOtherContent.append(content);
 
-    return images;
+    return content;
   }
 
   HunkWidget *addHunk(
@@ -2039,7 +2076,7 @@ private:
   Header *mHeader;
   DisclosureButton *disclosureButton;
   QVBoxLayout* layout;
-  QList<QWidget *> mImages;
+  QList<QWidget *> mOtherContent;
   QList<HunkWidget *> mHunks;
   bool contentCreated;
 };
