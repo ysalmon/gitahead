@@ -1822,9 +1822,15 @@ public:
     if (patch.isUntracked()) {
       QFile dev(path);
       if (dev.open(QFile::ReadOnly)) {
-        QByteArray content = dev.readAll();
+        QByteArray content = dev.read(1024);
         git::Buffer buffer(content.constData(), content.length());
         binary = buffer.isBinary();
+        if (!binary) {
+          dev.seek(dev.size() - 1024);
+          QByteArray content = dev.read(1024);
+          git::Buffer buffer(content.constData(), content.length());
+          binary = buffer.isBinary();
+        }
       }
     }
 
