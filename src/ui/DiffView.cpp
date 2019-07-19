@@ -1710,6 +1710,8 @@ public:
       // Add edit button.
       mEdit = new EditButton(patch, -1, binary, lfs, this);
       mEdit->setToolTip(tr("Edit File"));
+      if (QFileInfo(mPatch.repo().workdir().filePath(name)).isDir())
+        mEdit->setEnabled(false);
       buttons->addWidget(mEdit);
 
       // Add discard button.
