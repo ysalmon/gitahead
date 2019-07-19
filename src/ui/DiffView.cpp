@@ -1909,6 +1909,8 @@ public:
 
     // Start hidden when the file is checked.
     bool expand = (mHeader->check()->checkState() == Qt::Unchecked);
+    if (mPatch.isUntracked() && (QFileInfo(path).isDir() || binary))
+      expand = false;
 
     if (Settings::instance()->value("collapse/added").toBool() == true &&
         patch.status() == GIT_DELTA_ADDED)
