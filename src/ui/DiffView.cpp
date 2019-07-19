@@ -2109,7 +2109,7 @@ private:
   QVBoxLayout* layout;
   QList<QWidget *> mOtherContent;
   QList<HunkWidget *> mHunks;
-  bool contentCreated;
+  bool contentCreated = false;
 };
 
 } // anon. namespace
