@@ -462,7 +462,12 @@ public:
     : BinaryContentWidget(parent)
     {
       QHBoxLayout *layout = new QHBoxLayout(this);
-      layout->addWidget(new QLabel("This is a binary file that we do not know how to preview."));
+      QLabel *label = new QLabel();
+      label->setAlignment(Qt::AlignCenter);
+      QString path = patch.repo().workdir().filePath(patch.name());
+      int size = QFileInfo(path).size();
+      label->setText(tr("Binary file of size %1, no preview available.").arg(locale().formattedDataSize(size)));
+      layout->addWidget(label);
     }
 };
 
