@@ -1931,9 +1931,11 @@ public:
     if (binary) {
       layout->addWidget(addOtherContent(disclosureButton, mPatch));
     } else if (mPatch.isUntracked()) {     // Add untracked file content.
-      if (QFileInfo(path).isDir())
-        layout->addWidget(new UntrackedDirWidget(path, this));
-      else
+      if (QFileInfo(path).isDir()) {
+        UntrackedDirWidget *dirw = new UntrackedDirWidget(path, this);
+        layout->addWidget(dirw);
+        mOtherContent.append(dirw);
+      } else
         layout->addWidget(addHunk(mDiff, mPatch, -1, lfs, submodule));
     } else {
       // Generate a diff between the head tree and index.
@@ -1995,6 +1997,8 @@ public:
 
     foreach (HunkWidget *hunk, mHunks)
       hunk->setVisible(visible);
+    foreach (QWidget *widget, mOtherContent)
+      widget->setVisible(visible);
   }
 
   bool isEmpty()
