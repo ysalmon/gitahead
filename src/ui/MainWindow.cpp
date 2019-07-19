@@ -47,11 +47,13 @@ const QString kWindowsGroup = "windows";
 
 bool MainWindow::sExiting = false;
 bool MainWindow::sSaveWindowSettings = false;
+bool MainWindow::sDoNotStartViews = false;
 
 MainWindow::MainWindow(
   const git::Repository &repo,
   QWidget *parent,
-  Qt::WindowFlags flags)
+  Qt::WindowFlags flags,
+  bool doNotStartView)
   : QMainWindow(parent, flags)
 {
   setAttribute(Qt::WA_DeleteOnClose);
@@ -108,6 +110,8 @@ MainWindow::MainWindow(
   // Create tab container.
   TabWidget *tabs = new TabWidget(splitter);
   connect(tabs, &TabWidget::currentChanged, [this](int index) {
+    if (!MainWindow::sDoNotStartViews)
+      currentView()->startView();
     updateInterface();
     MenuBar::instance(this)->update();
   });
@@ -187,7 +191,7 @@ TabWidget *MainWindow::tabWidget() const
   return static_cast<TabWidget *>(splitter->widget(1));
 }
 
-RepoView *MainWindow::addTab(const QString &path)
+RepoView *MainWindow::addTab(const QString &path, bool doNotStartView)
 {
   if (path.isEmpty())
     return nullptr;
@@ -198,10 +202,10 @@ RepoView *MainWindow::addTab(const QString &path)
     return nullptr;
   }
 
-  return addTab(repo);
+  return addTab(repo, doNotStartView);
 }
 
-RepoView *MainWindow::addTab(const git::Repository &repo)
+RepoView *MainWindow::addTab(const git::Repository &repo, bool doNotStartView)
 {
   // Update recent repository settings.
   QDir dir = repo.workdir();
@@ -219,12 +223,8 @@ RepoView *MainWindow::addTab(const git::Repository &repo)
   emit tabs->tabAboutToBeInserted();
   tabs->setCurrentIndex(tabs->addTab(view, dir.dirName()));
 
-  // Start status diff.
-  view->refresh();
-
-  // Select head after the view has been added.
-  view->selectHead();
-  view->selectFirstCommit();
+  if (!doNotStartView)
+    view->startView();
 
   return view;
 }
@@ -285,8 +285,9 @@ bool MainWindow::restoreWindows()
     if (paths.isEmpty())
       continue;
 
+    MainWindow::sDoNotStartViews = true;
     // Open a window new for the first valid repo.
-    MainWindow *window = open(paths.takeFirst());
+    MainWindow *window = open(paths.takeFirst(), true);
     while (!window && !paths.isEmpty())
       window = open(paths.takeFirst());
 
@@ -295,8 +296,9 @@ bool MainWindow::restoreWindows()
 
     // Add the remainder as tabs.
     foreach (const QString &path, paths)
-      window->addTab(path);
+      window->addTab(path, true);
 
+    MainWindow::sDoNotStartViews = false;
     // Select saved index.
     window->tabWidget()->setCurrentIndex(index);
 
@@ -322,7 +324,7 @@ bool MainWindow::restoreWindows()
   return !windows.isEmpty();
 }
 
-MainWindow *MainWindow::open(const QString &path, bool warnOnInvalid)
+MainWindow *MainWindow::open(const QString &path, bool warnOnInvalid, bool doNotStartView)
 {
   if (path.isEmpty())
     return nullptr;
@@ -344,14 +346,14 @@ MainWindow *MainWindow::open(const QString &path, bool warnOnInvalid)
   return open(repo);
 }
 
-MainWindow *MainWindow::open(const git::Repository &repo)
+MainWindow *MainWindow::open(const git::Repository &repo, bool doNotStartView)
 {
   // Update recent repository settings.
   if (repo.isValid())
     RecentRepositories::instance()->add(repo.workdir().path());
 
   // Create the window.
-  MainWindow *window = new MainWindow(repo);
+  MainWindow *window = new MainWindow(repo, doNotStartView);
   window->show();
 
   return window;

@@ -448,6 +448,21 @@ RepoView::~RepoView()
   mCommits->clearFocus();
 }
 
+void RepoView::startView()
+{
+  if (!mStarted) {
+    // Start status diff.
+    refresh();
+
+    // Select head after the view has been added.
+    selectHead();
+    selectFirstCommit();
+
+    mStarted = true;
+  }
+}
+
+
 void RepoView::clean(const QStringList &untracked)
 {
   QString singular = tr("untracked file");

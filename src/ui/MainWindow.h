@@ -26,10 +26,8 @@ class MainWindow : public QMainWindow
   Q_OBJECT
 
 public:
-  MainWindow(
-    const git::Repository &repo,
-    QWidget *parent = nullptr,
-    Qt::WindowFlags flags = 0);
+  MainWindow(const git::Repository& repo, QWidget* parent = nullptr, Qt::WindowFlags flags = 0, bool doNotStartView = false);
+  MainWindow(const git::Repository& repo, bool doNotStartView) : MainWindow(repo, nullptr, 0, doNotStartView) {};
 
   ToolBar *toolBar() const { return mToolBar; }
 
@@ -37,8 +35,8 @@ public:
   void setSideBarVisible(bool visible);
 
   TabWidget *tabWidget() const;
-  RepoView *addTab(const QString &path);
-  RepoView *addTab(const git::Repository &repo);
+  RepoView *addTab(const QString &path, bool doNotStartView = false);
+  RepoView *addTab(const git::Repository &repo, bool doNotStartView = false);
 
   int count() const;
   RepoView *currentView() const;
@@ -53,8 +51,8 @@ public:
   static bool restoreWindows();
 
   // Open a new window.
-  static MainWindow *open(const QString &path, bool warnOnInvalid = true);
-  static MainWindow *open(const git::Repository &repo = git::Repository());
+  static MainWindow *open(const QString &path, bool warnOnInvalid = true, bool doNotStartView = false);
+  static MainWindow *open(const git::Repository &repo = git::Repository(), bool doNotStartView = false);
 
   // Avoid updating interface during exit.
   static void setExiting(bool exiting);
@@ -86,6 +84,7 @@ private:
 
   bool mShown = false;
 
+  static bool sDoNotStartViews;
   static bool sExiting;
   static bool sSaveWindowSettings;
 };

@@ -71,6 +71,8 @@ public:
   RepoView(const git::Repository &repo, MainWindow *parent);
   virtual ~RepoView();
 
+  void startView();
+
   //clean
   void clean(const QStringList &untracked);
 
@@ -353,6 +355,7 @@ private:
   QList<QWidget *> mTrackedWindows;
 
   bool mShown = false;
+  bool mStarted = false;
 
   friend class MenuBar;
 };
