@@ -437,6 +437,22 @@ protected:
   }
 };
 
+class UntrackedDirWidget : public QWidget
+{
+public:
+  UntrackedDirWidget(
+    const QString path,
+    QWidget *parent = nullptr)
+    : QWidget(parent)
+    {
+      QHBoxLayout *layout = new QHBoxLayout(this);
+      QLabel *label = new QLabel();
+      label->setAlignment(Qt::AlignCenter);
+      label->setText(tr("A directory containing no tracked file."));
+      layout->addWidget(label);
+    }
+};
+
 class BinaryContentWidget : public QWidget
 {
 public:
@@ -1913,7 +1929,9 @@ public:
     if (binary) {
       layout->addWidget(addOtherContent(disclosureButton, mPatch));
     } else if (mPatch.isUntracked()) {     // Add untracked file content.
-      if (!QFileInfo(path).isDir())
+      if (QFileInfo(path).isDir())
+        layout->addWidget(new UntrackedDirWidget(path, this));
+      else
         layout->addWidget(addHunk(mDiff, mPatch, -1, lfs, submodule));
     } else {
       // Generate a diff between the head tree and index.
