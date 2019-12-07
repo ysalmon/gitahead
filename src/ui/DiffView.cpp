@@ -465,7 +465,7 @@ public:
     return failure;
   }
 protected:
-  bool failure;
+  bool failure = false;
 };
 
 class DefaultContentWidget : public BinaryContentWidget
